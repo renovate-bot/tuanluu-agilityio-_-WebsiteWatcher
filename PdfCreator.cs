@@ -1,0 +1,42 @@
+using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Extensions.Sql;
+using Microsoft.Extensions.Logging;
+using PuppeteerSharp;
+
+namespace WebsiteWatcher;
+
+public class PdfCreator(ILogger<PdfCreator> logger)
+{
+    // Visit https://aka.ms/sqltrigger to learn how to use this trigger binding
+    [Function(nameof(PdfCreator))]
+    public async Task Run(
+        [SqlTrigger("[dbo].[Websites]", "WebsiteWatcher")] SqlChange<Website>[] changes)
+    {
+        foreach (var change in changes)
+        {
+            if (change.Operation == SqlChangeOperation.Insert)
+            {
+                var result = await ConvertPageToPdfAsync(change.Item.Url);
+                logger.LogInformation($"PDF stream length is: {result.Length}");
+            }
+        }
+    }
+
+    private async Task<Stream> ConvertPageToPdfAsync(string url)
+    {
+        var browserFetcher = new BrowserFetcher();
+
+        await browserFetcher.DownloadAsync();
+        await using var browser = await Puppeteer.LaunchAsync(new LaunchOptions
+        {
+            Headless = true
+        });
+        await using var page = await browser.NewPageAsync();
+        await page.GoToAsync(url);
+        await page.EvaluateExpressionAsync("document.fonts.ready");
+        var result = await page.PdfStreamAsync();
+        result.Position = 0;
+
+        return result;
+    }
+}
