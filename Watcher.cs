@@ -1,15 +1,12 @@
-using System;
 using Azure.Storage.Blobs;
 using HtmlAgilityPack;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Extensions.Sql;
 using Microsoft.Extensions.Logging;
-using PuppeteerSharp;
 
 namespace WebsiteWatcher;
 
-public class Watcher(ILogger<Watcher> logger)
+public class Watcher(ILogger<Watcher> logger, PdfCreatorService pdfCreatorService)
 {
     private const string SqlInputQuery = @"SELECT w.Id, w.Url, w.XPathExpression, s.[Content] AS LatestContent
                                         FROM dbo.Websites AS w 
@@ -40,7 +37,7 @@ public class Watcher(ILogger<Watcher> logger)
                 logger.LogInformation($"Old content: {website.LatestContent}");
                 logger.LogInformation($"New content: {content}");
 
-                var newPdf = await ConvertPageToPdfAsync(website.Url);
+                var newPdf = await pdfCreatorService.ConvertPageToPdfAsync(website.Url);
                 var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings:WebsiteWatcherStorage");
                 var blobClient = new BlobClient(connectionString, "pdfs", $"{website.Id}-{DateTime.UtcNow:MMddyyyyhhmmss}.pdf");
                 await blobClient.UploadAsync(newPdf);
@@ -55,24 +52,6 @@ public class Watcher(ILogger<Watcher> logger)
             }
         }
         logger.LogInformation($"C# Timer trigger function executed at: {DateTime.Now}");
-
-        return result;
-    }
-
-    private async Task<Stream> ConvertPageToPdfAsync(string url)
-    {
-        var browserFetcher = new BrowserFetcher();
-
-        await browserFetcher.DownloadAsync();
-        await using var browser = await Puppeteer.LaunchAsync(new LaunchOptions
-        {
-            Headless = true
-        });
-        await using var page = await browser.NewPageAsync();
-        await page.GoToAsync(url);
-        await page.EvaluateExpressionAsync("document.fonts.ready");
-        var result = await page.PdfStreamAsync();
-        result.Position = 0;
 
         return result;
     }

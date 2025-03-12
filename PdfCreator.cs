@@ -6,7 +6,7 @@ using PuppeteerSharp;
 
 namespace WebsiteWatcher;
 
-public class PdfCreator(ILogger<PdfCreator> logger)
+public class PdfCreator(ILogger<PdfCreator> logger, PdfCreatorService pdfCreatorService)
 {
     // Visit https://aka.ms/sqltrigger to learn how to use this trigger binding
     [Function(nameof(PdfCreator))]
@@ -18,7 +18,7 @@ public class PdfCreator(ILogger<PdfCreator> logger)
         {
             if (change.Operation == SqlChangeOperation.Insert)
             {
-                var result = await ConvertPageToPdfAsync(change.Item.Url);
+                var result = await pdfCreatorService.ConvertPageToPdfAsync(change.Item.Url);
                 buffer = new byte[result.Length];
                 await result.ReadAsync(buffer.AsMemory(0, buffer.Length));
 
@@ -33,21 +33,5 @@ public class PdfCreator(ILogger<PdfCreator> logger)
         return buffer;
     }
 
-    private async Task<Stream> ConvertPageToPdfAsync(string url)
-    {
-        var browserFetcher = new BrowserFetcher();
-
-        await browserFetcher.DownloadAsync();
-        await using var browser = await Puppeteer.LaunchAsync(new LaunchOptions
-        {
-            Headless = true
-        });
-        await using var page = await browser.NewPageAsync();
-        await page.GoToAsync(url);
-        await page.EvaluateExpressionAsync("document.fonts.ready");
-        var result = await page.PdfStreamAsync();
-        result.Position = 0;
-
-        return result;
-    }
+    
 }
