@@ -2,7 +2,7 @@
 using Google.Apis.Safebrowsing.v4.Data;
 using Microsoft.Extensions.Configuration;
 
-namespace WebsiteWatcher;
+namespace WebsiteWatcher.Services;
 
 public class SafeBrowsingService(IConfiguration configuration)
 {
