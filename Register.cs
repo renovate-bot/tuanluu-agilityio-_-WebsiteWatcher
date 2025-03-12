@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace WebsiteWatcher;
 
-public class Register(ILogger<Register> logger)
+public class Register(ILogger<Register> logger, SafeBrowsingService safeBrowsingService)
 {
     [Function(nameof(Register))]
     public async Task<OutputType> Run([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequestData req)
@@ -17,6 +17,18 @@ public class Register(ILogger<Register> logger)
         var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
         var website = JsonSerializer.Deserialize<Website>(requestBody, options);
         website.Id = Guid.NewGuid();
+
+        var result = safeBrowsingService.Check(website.Url);
+        if (result.HasThreat)
+        {
+            var threats = string.Join(", ", result.Threats);
+            logger.LogInformation($"Website {website.Url} has threats: {threats}");
+            return new OutputType()
+            {
+                Website = website,
+                HttpResponse = req.CreateResponse(System.Net.HttpStatusCode.BadRequest)
+            };
+        }
 
         return new OutputType()
         {

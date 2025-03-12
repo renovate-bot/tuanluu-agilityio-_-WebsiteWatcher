@@ -9,6 +9,7 @@ var host = new HostBuilder()
         services.AddApplicationInsightsTelemetryWorkerService();
         services.ConfigureFunctionsApplicationInsights();
         services.AddSingleton<PdfCreatorService> ();
+        services.AddSingleton<SafeBrowsingService>();
     })
     .Build();
 
