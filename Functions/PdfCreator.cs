@@ -25,7 +25,7 @@ public class PdfCreator(ILogger<PdfCreator> logger, PdfCreatorService pdfCreator
 
                 logger.LogInformation($"PDF stream length is: {result.Length}");
 
-                var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings:WebsiteWatcherStorage");
+                var connectionString = Environment.GetEnvironmentVariable("AzureWebJobsStorage");
                 var blobClient = new BlobClient(connectionString, "pdfs", $"{change.Item.Id}.pdf");
                 await blobClient.UploadAsync(new MemoryStream(buffer));
             }

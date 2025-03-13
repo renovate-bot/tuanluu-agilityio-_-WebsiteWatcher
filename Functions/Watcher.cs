@@ -29,9 +29,8 @@ public class Watcher(ILogger<Watcher> logger, PdfCreatorService pdfCreatorServic
 
             var divWithContent = doc.DocumentNode.SelectSingleNode(website.XPathExpression);
             var content = divWithContent != null ? divWithContent.InnerText.Trim() : "No content";
-            content = content.Replace("Microsoft Entra", "Azure AD");
-
             var contentHasChanged = website.LatestContent != content;
+
             if (contentHasChanged)
             {
                 logger.LogInformation($"Content has changed for website: {website.Url}");
@@ -39,7 +38,7 @@ public class Watcher(ILogger<Watcher> logger, PdfCreatorService pdfCreatorServic
                 logger.LogInformation($"New content: {content}");
 
                 var newPdf = await pdfCreatorService.ConvertPageToPdfAsync(website.Url);
-                var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings:WebsiteWatcherStorage");
+                var connectionString = Environment.GetEnvironmentVariable("AzureWebJobsStorage");
                 var blobClient = new BlobClient(connectionString, "pdfs", $"{website.Id}-{DateTime.UtcNow:MMddyyyyhhmmss}.pdf");
                 await blobClient.UploadAsync(newPdf);
 
