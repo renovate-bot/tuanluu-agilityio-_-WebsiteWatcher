@@ -11,7 +11,7 @@ public class Register(ILogger<Register> logger)
     [Function(nameof(Register))]
     public async Task<OutputType> Run([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequestData req)
     {
-        logger.LogInformation("C# HTTP trigger function processed a request.");
+        logger.LogInformation("ADD NEW COMMENT TO RE-TEST AUTO DEPLOY - C# HTTP trigger function processed a request.");
 
         var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
         var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
